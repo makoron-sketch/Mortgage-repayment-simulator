@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金利変動対応・住宅ローン返済シミュレーター</title>
+    <style>
+        :root {
+            --primary-color: #005bac;
+            --secondary-color: #e5f2ff;
+            --warning-color: #d9534f;
+            --text-color: #333;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 24px;
+            margin-bottom: 30px;
+            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section-title {
+            grid-column: 1 / -1;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-top: 10px;
+            border-left: 4px solid var(--primary-color);
+            padding-left: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .unit {
+            position: absolute;
+            right: 10px;
+            color: #777;
+            pointer-events: none;
+        }
+
+        input[type="number"] {
+            padding-right: 40px;
+        }
+
+        /* 結果表示エリア */
+        .results {
+            margin-top: 30px;
+            background: var(--secondary-color);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .result-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .result-box.warning {
+            border: 2px solid var(--warning-color);
+        }
+
+        .result-box.warning .price {
+            color: var(--warning-color);
+        }
+
+        .result-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .price {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .price span {
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .note {
+            grid-column: 1 / -1;
+            font-size: 12px;
+            color: #666;
+            text-align: left;
+            margin-top: 10px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>住宅ローン返済シミュレーター<br><small style="font-size:14px; color:#666;">（金利変動リスク対応版）</small></h1>
+    
+    <div class="grid">
+        <!-- 基本設定 -->
+        <div class="section-title">基本条件</div>
+        
+        <div class="form-group">
+            <label for="loanAmount">借入金額</label>
+            <div class="input-container">
+                <input type="number" id="loanAmount" value="4000" min="1" max="99999">
+                <span class="unit">万円</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="loanPeriod">借入期間</label>
+            <div class="input-container">
+                <input type="number" id="loanPeriod" value="35" min="1" max="50">
+                <span class="unit">年</span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="startRate">当初金利（年利）</label>
+            <div class="input-container">
+                <input type="number" id="startRate" value="0.5" step="0.01" min="0">
+                <span class="unit">%</span>
+            </div>
+        </div>
+
+        <!-- 金利変動リスク設定 -->
+        <div class="section-title">金利変動シミュレーション</div>
+
+        <div class="form-group">
+            <label for="changeYear">金利が上昇するタイミング</label>
+            <select id="changeYear">
+                <option value="5">5年後</option>
+                <option value="10" selected>10年後</option>
+                <option value="15">15年後</option>
+                <option value="20">20年後</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="afterRate">上昇後の金利（年利）</label>
+            <div class="input-container">
+                <input type="number" id="afterRate" value="2.0" step="0.01" min="0">
+                <span class="unit">%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 計算結果 -->
+    <div class="results">
+        <div class="result-grid">
+            <div class="result-box">
+                <div class="result-label">当初の毎月返済額</div>
+                <div class="price" id="currentMonthly">0<span> 円</span></div>
+            </div>
+            
+            <div class="result-box warning">
+                <div class="result-label">金利上昇後の毎月返済額</div>
+                <div class="price" id="afterMonthly">0<span> 円</span></div>
+            </div>
+
+            <div class="result-box">
+                <div class="result-label">当初金利のままの総返済額</div>
+                <div class="price" id="totalStandard">0<span> 万円</span></div>
+            </div>
+
+            <div class="result-box warning">
+                <div class="result-label">金利上昇時の総返済額</div>
+                <div class="price" id="totalWithRisk">0<span> 万円</span></div>
+            </div>
+
+            <div class="note">
+                ※ 元利均等返済方式、ボーナス払いなしで計算しています。<br>
+                ※ 変動金利の「5年ルール」「125%ルール」は考慮せず、純粋に金利が指定年数後に切り替わった場合の試算となります。営業時のリスク説明の目安としてご活用ください。
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 要素の取得
+    const inputs = ['loanAmount', 'loanPeriod', 'startRate', 'changeYear', 'afterRate'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('input', calculateLoan);
+    });
+    document.getElementById('changeYear').addEventListener('change', calculateLoan);
+
+    // 毎月返済額の計算関数 (元利均等)
+    function calcMonthlyPayment(principal, annualRate, totalMonths) {
+        if (annualRate === 0) return Math.round(principal / totalMonths);
+        const monthlyRate = annualRate / 12 / 100;
+        return Math.round(principal * (monthlyRate * Math.pow(1 + monthlyRate, totalMonths)) / (Math.pow(1 + monthlyRate, totalMonths) - 1));
+    }
+
+    function calculateLoan() {
+        // 値の取得
+        const amount = parseFloat(document.getElementById('loanAmount').value) * 10000; // 円単位に変換
+        const periodYears = parseInt(document.getElementById('loanPeriod').value);
+        const startRate = parseFloat(document.getElementById('startRate').value);
+        const changeYear = parseInt(document.getElementById('changeYear').value);
+        const afterRate = parseFloat(document.getElementById('afterRate').value);
+
+        if (isNaN(amount) || isNaN(periodYears) || isNaN(startRate) || isNaN(afterRate) || amount <= 0) return;
+
+        const totalMonths = periodYears * 12;
+        const changeMonth = changeYear * 12;
+
+        // 1. 当初の毎月返済額 ＆ ずっと変わらない場合の総返済額
+        const currentMonthly = calcMonthlyPayment(amount, startRate, totalMonths);
+        const totalStandard = currentMonthly * totalMonths;
+
+        // 2. 金利変動があった場合の計算
+        let afterMonthly = currentMonthly;
+        let totalWithRisk = totalStandard;
+
+        if (changeMonth < totalMonths) {
+            // 金利変更直前の残高を計算
+            let remainingPrincipal = amount;
+            const monthlyRateStart = startRate / 12 / 100;
+
+            for (let i = 0; i < changeMonth; i++) {
+                if (startRate > 0) {
+                    let interest = Math.floor(remainingPrincipal * monthlyRateStart);
+                    let principalPaid = currentMonthly - interest;
+                    remainingPrincipal -= principalPaid;
+                } else {
+                    remainingPrincipal -= (amount / totalMonths);
+                }
+            }
+
+            // 残りの期間
+            const remainingMonths = totalMonths - changeMonth;
+            // 上昇後の毎月返済額
+            afterMonthly = calcMonthlyPayment(remainingPrincipal, afterRate, remainingMonths);
+            // 上昇時の総返済額 (前半の返済額 + 後半の返済額)
+            totalWithRisk = (currentMonthly * changeMonth) + (afterMonthly * remainingMonths);
+        }
+
+        // 画面への反映
+        document.getElementById('currentMonthly').innerText = currentMonthly.toLocaleString() + ' 円';
+        document.getElementById('afterMonthly').innerText = afterMonthly.toLocaleString() + ' 円';
+        document.getElementById('totalStandard').innerText = Math.round(totalStandard / 10000).toLocaleString() + ' 万円';
+        document.getElementById('totalWithRisk').innerText = Math.round(totalWithRisk / 10000).toLocaleString() + ' 万円';
+    }
+
+    // 初期計算
+    calculateLoan();
+</script>
+
+</body>
+</html>
